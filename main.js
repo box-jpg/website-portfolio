@@ -1,6 +1,5 @@
 import './style.css';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 // Setup
 
@@ -16,6 +15,12 @@ renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 camera.position.setZ(30);
 camera.position.setX(-3);
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
 renderer.render(scene, camera);
 
@@ -60,12 +65,23 @@ Array(200).fill().forEach(addStar);
 
 // Background
 
-const spaceTexture = new THREE.TextureLoader().load('space.jpg');
+const textureLoader = new THREE.TextureLoader();
+
+const loadTexture = (url) => {
+  return textureLoader.load(
+    url,
+    undefined,
+    undefined,
+    (err) => {
+      console.error(`Failed to load texture: ${url}`, err);
+    }
+  );
+};
+
+const spaceTexture = loadTexture('space.jpg');
 scene.background = spaceTexture;
 
-// Avatar
-
-const jeffTexture = new THREE.TextureLoader().load('jeff.png');
+const jeffTexture = loadTexture('jeff.png');
 
 const jeff = new THREE.Mesh(new THREE.BoxGeometry(3, 3, 3), new THREE.MeshBasicMaterial({ map: jeffTexture }));
 
@@ -73,8 +89,8 @@ scene.add(jeff);
 
 // Moon
 
-const moonTexture = new THREE.TextureLoader().load('moon.jpg');
-const normalTexture = new THREE.TextureLoader().load('normal.jpg');
+const moonTexture = loadTexture('moon.jpg');
+const normalTexture = loadTexture('normal.jpg');
 
 const moon = new THREE.Mesh(
   new THREE.SphereGeometry(3, 32, 32),
@@ -94,6 +110,8 @@ jeff.position.x = 2;
 
 // Scroll Animation
 
+let ticking = false;
+
 function moveCamera() {
   const t = document.body.getBoundingClientRect().top;
   moon.rotation.x += 0.05;
@@ -106,9 +124,18 @@ function moveCamera() {
   camera.position.z = t * -0.01;
   camera.position.x = t * -0.0002;
   camera.rotation.y = t * -0.0002;
+  
+  ticking = false;
 }
 
-document.body.onscroll = moveCamera;
+function onScroll() {
+  if (!ticking) {
+    requestAnimationFrame(moveCamera);
+    ticking = true;
+  }
+}
+
+document.body.onscroll = onScroll;
 moveCamera();
 
 // Animation Loop
